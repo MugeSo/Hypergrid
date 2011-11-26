@@ -202,6 +202,49 @@ var Hypergrid = Class.create({
 				//create th element
 				var th = col._th = document.createElement('th');
 				
+				if(Prototype.Browser.WebKit === true){
+					col.setWidth = function (width) {
+						if(width) {
+							if((this.tableWidth !== 'auto') && (table.getStyle('table-layout') === 'fixed')){
+								//set style to th
+								th.style.width = (
+									col.width +
+									parseInt(th.getStyle('padding-left').replace('px', ''), 10) +
+									parseInt(th.getStyle('padding-right').replace('px', ''), 10) +
+									parseInt(th.getStyle('border-right-width').replace('px', ''), 10)
+								) + 'px';
+							} else {
+								th.style.width = width + 'px';
+							}
+							col.width = width;
+						} else {
+							th.style.width = 'auto';
+							delete col.width;
+						}
+					};
+					col.getWidth = function () {
+						return th.getWidth();
+					};
+				} else {
+					col.setWidth = function (width) {
+						if (width) {
+							col.width = width;
+							th.style.width = col.width + 'px';
+						} else {
+							th.style.width = 'auto';
+							delete col.width;
+						}
+					};			
+				}
+				
+				col.getWidth = function () {
+					return th.getWidth() -
+					parseInt(th.getStyle('padding-left').replace('px', ''), 10) -
+					parseInt(th.getStyle('padding-right').replace('px', ''), 10) -
+					parseInt(th.getStyle('border-right-width').replace('px', ''), 10) -
+					parseInt(th.getStyle('border-left-width').replace('px', ''), 10);
+				};
+				
 				//set title attr
 				if(col.title) th.setAttribute('title', col.title);
 				
@@ -210,7 +253,6 @@ var Hypergrid = Class.create({
 				if(col.onClick) styles.cursor = 'pointer';
 				styles.textAlign     = col.align  || 'left';
 				styles.verticalAlign = col.valign || 'middle';
-				styles.width         = (col.width) ? (col.width + 'px') : 'auto';
 				styles.minWidth      = this.colMinWidth + 'px';
 				th.setStyle(styles);
 				
@@ -239,18 +281,7 @@ var Hypergrid = Class.create({
 				//insert th to tr
 				r.appendChild(th);
 				
-				//adjust size by browser
-				if(Prototype.Browser.WebKit === true){
-					if(col.width && (this.tableWidth !== 'auto') && (table.getStyle('table-layout') === 'fixed')){
-						//set style to th
-						th.style.width = (
-							col.width +
-							parseInt(th.getStyle('padding-left').replace('px', ''), 10) +
-							parseInt(th.getStyle('padding-right').replace('px', ''), 10) +
-							parseInt(th.getStyle('border-left-width').replace('px', ''), 10)
-						) + 'px';
-					}
-				}
+				col.setWidth(col.width);
 			}.bind(this));//<--#each
 		}//<--if
 		
@@ -433,30 +464,21 @@ var Hypergrid = Class.create({
 						
 						var resize = parseInt(rbar.getStyle('left').replace('px', ''), 10) - beforePos;
 						
-						col.width = (
-							resize + col._th.getWidth() -
-							parseInt(col._th.getStyle('padding-left').replace('px', ''), 10) -
-							parseInt(col._th.getStyle('padding-right').replace('px', ''), 10) -
-							((i === 0) ? 0 : 1)
-						);
+						var arrColWidth = [];
+						for (var j = this.colModel.length -1; j > i; j--) {
+							arrColWidth[j] = this.colModel[j].getWidth();
+						}
 						
-						col._th.style.width = col.width + 'px';
+						col.setWidth(resize + col.getWidth());
 						
-						//remove width style of right column
-						this.colModel[i + 1]._th.style.width = 'auto';
-						delete this.colModel[i + 1].width;
-						
-						//adjust size by browser
-						if(Prototype.Browser.WebKit === true){
-							if((this.tableWidth !== 'auto') && (table.getStyle('table-layout') === 'fixed')){
-								//set style to th
-								col._th.style.width = (
-									col.width +
-									parseInt(col._th.getStyle('padding-left').replace('px', ''), 10) +
-									parseInt(col._th.getStyle('padding-right').replace('px', ''), 10) +
-									parseInt(col._th.getStyle('border-left-width').replace('px', ''), 10)
-								) + 'px';
-							}
+						// resize right colmun
+						var rest = -resize%(this.colModel.length - i - 1);
+						var delta = (-resize-rest)/(this.colModel.length - i - 1);
+						for (var j = this.colModel.length -1; j > i; j--) {
+							var jThCol = this.colModel[j];
+							jThCol.setWidth(
+								delta + (j === i+1 ? rest : 0 ) + arrColWidth[j]
+							);
 						}
 						
 						repositionResizeBars();
