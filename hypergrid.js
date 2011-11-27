@@ -465,22 +465,28 @@ var Hypergrid = Class.create({
 						
 						var resize = parseInt(rbar.getStyle('left').replace('px', ''), 10) - beforePos;
 						
-						var arrColWidth = [];
-						for (j = this.colModel.length -1; j > i; j--) {
-							arrColWidth[j] = this.colModel[j].getWidth();
+						var currentColWidth = [];
+						for (j = i; j < this.colModel.length; j++) {
+							currentColWidth[j] = this.colModel[j].getWidth();
 						}
 						
-						col.setWidth(resize + col.getWidth());
+						resize = Math.max(resize, (this.colModel[i].minWidth ? this.colModel[i].minWidth : this.colMinWidth ) - currentColWidth[i]);
 						
 						// resize right colmun
 						var rest = -resize%(this.colModel.length - i - 1);
 						var delta = (-resize-rest)/(this.colModel.length - i - 1);
-						for (j = this.colModel.length -1; j > i; j--) {
-							this.colModel[j].setWidth(
-								delta + (j === i+1 ? rest : 0 ) + arrColWidth[j]
-							);
+						var fixedWidth;
+						for (j = this.colModel.length -1; j > i + 1; j--) {
+							fixedWidth = Math.max(this.colModel[j].minWidth ? this.colModel[j].minWidth : this.colMinWidth, delta + currentColWidth[j]);
+							this.colModel[j].setWidth(fixedWidth);
+							rest += delta - (fixedWidth - currentColWidth[j]);
 						}
 						
+						fixedWidth = Math.max(this.colModel[j].minWidth ? this.colModel[j].minWidth : this.colMinWidth, delta + rest + currentColWidth[j]);						
+						this.colModel[j].setWidth(fixedWidth);
+						rest = delta + rest - (fixedWidth - currentColWidth[j]);
+
+						col.setWidth(resize + rest + currentColWidth[i]);
 						repositionResizeBars();
 						
 						//stop observing events
