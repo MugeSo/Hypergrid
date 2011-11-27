@@ -460,12 +460,13 @@ var Hypergrid = Class.create({
 					
 					//mouseup event
 					var onUp = function(e){
+						var j;
 						rbar.removeClassName('hypergrid-resize-bar-visible');
 						
 						var resize = parseInt(rbar.getStyle('left').replace('px', ''), 10) - beforePos;
 						
 						var arrColWidth = [];
-						for (var j = this.colModel.length -1; j > i; j--) {
+						for (j = this.colModel.length -1; j > i; j--) {
 							arrColWidth[j] = this.colModel[j].getWidth();
 						}
 						
@@ -474,9 +475,8 @@ var Hypergrid = Class.create({
 						// resize right colmun
 						var rest = -resize%(this.colModel.length - i - 1);
 						var delta = (-resize-rest)/(this.colModel.length - i - 1);
-						for (var j = this.colModel.length -1; j > i; j--) {
-							var jThCol = this.colModel[j];
-							jThCol.setWidth(
+						for (j = this.colModel.length -1; j > i; j--) {
+							this.colModel[j].setWidth(
 								delta + (j === i+1 ? rest : 0 ) + arrColWidth[j]
 							);
 						}
